@@ -1,0 +1,15 @@
+# the site under test is cloned here, it lives in its own repo
+site/
+
+node_modules/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+.env
+.env.*
+*.log
+
+.DS_Store
+Thumbs.db
