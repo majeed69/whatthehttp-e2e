@@ -1,19 +1,21 @@
 import { test as base, expect } from '@playwright/test';
+import { CLOUDFLARE, answerDns, isTimingRequest } from './dns-mock';
 
 export const isLive = Boolean(process.env.BASE_URL);
 
 const LOCAL_HOST = '127.0.0.1';
 
 type AutoFixtures = {
-  blockExternalRequests: void;
+  localNetwork: void;
   failOnPageErrors: void;
 };
 
 export const test = base.extend<AutoFixtures>({
-  // In local mode nothing may leave the machine. Tests mock what they need
-  // with page.route(), and page routes run before this context route, so
-  // anything that reaches here is a request nobody mocked.
-  blockExternalRequests: [
+  // In local mode nothing may leave the machine. The last registered route
+  // runs first, so the default mocks below get the first look and the guard
+  // only sees requests nobody mocked. A test can still override a default
+  // with page.route(), because page routes run before context routes.
+  localNetwork: [
     async ({ context }, use) => {
       const leaked: string[] = [];
       if (!isLive) {
@@ -24,6 +26,8 @@ export const test = base.extend<AutoFixtures>({
             return route.abort();
           },
         );
+        await context.route(CLOUDFLARE, answerDns);
+        await context.route(isTimingRequest, (route) => route.fulfill({ status: 200 }));
       }
       await use();
       expect(leaked, 'unmocked requests that tried to leave localhost').toEqual([]);
