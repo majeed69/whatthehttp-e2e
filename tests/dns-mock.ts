@@ -1,6 +1,10 @@
 import type { Route } from '@playwright/test';
 
 export const CLOUDFLARE = 'https://cloudflare-dns.com/dns-query?**';
+export const GOOGLE = 'https://dns.google/resolve?**';
+
+// Without this the browser hides the response from the page (CORS).
+export const CORS = { 'access-control-allow-origin': '*' };
 
 // Documentation-only addresses (RFC 5737 and RFC 3849), so a failure message
 // makes it obvious the data came from the mock and not a real resolver.
@@ -18,10 +22,15 @@ export async function answerDns(route: Route) {
   const data: Record<string, string> = { A: MOCK_IPV4, AAAA: MOCK_IPV6, NS: `ns1.${name}.` };
   const answer = data[type] ? [{ name: `${name}.`, type: TYPE_NUMBER[type], TTL: 300, data: data[type] }] : [];
 
+  await route.fulfill({ json: { Status: 0, AD: false, Answer: answer }, headers: CORS });
+}
+
+// A real "this name doesn't exist" answer (status 3), with the SOA record a
+// resolver puts in the authority section to say which zone gave the answer.
+export async function answerNxdomain(route: Route) {
   await route.fulfill({
-    json: { Status: 0, AD: false, Answer: answer },
-    // without this the browser hides the response from the page (CORS)
-    headers: { 'access-control-allow-origin': '*' },
+    json: { Status: 3, AD: false, Authority: [{ name: 'com.', type: 6, TTL: 900, data: 'a.gtld-servers.net. nstld.verisign-grs.com. 1 1800 900 604800 900' }] },
+    headers: CORS,
   });
 }
 
