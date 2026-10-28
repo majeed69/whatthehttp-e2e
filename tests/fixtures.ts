@@ -10,7 +10,15 @@ type AutoFixtures = {
   failOnPageErrors: void;
 };
 
-export const test = base.extend<AutoFixtures>({
+type Options = {
+  // Hosts a test makes fail on purpose, like a resolver that's down. Chrome
+  // logs those failed requests as console errors, which are expected then.
+  failingHosts: string[];
+};
+
+export const test = base.extend<AutoFixtures & Options>({
+  failingHosts: [[], { option: true }],
+
   // In local mode nothing may leave the machine. The last registered route
   // runs first, so the default mocks below get the first look and the guard
   // only sees requests nobody mocked. A test can still override a default
@@ -36,7 +44,7 @@ export const test = base.extend<AutoFixtures>({
   ],
 
   failOnPageErrors: [
-    async ({ page }, use) => {
+    async ({ page, failingHosts }, use) => {
       const errors: string[] = [];
       page.on('console', (msg) => {
         if (msg.type() !== 'error') return;
@@ -45,6 +53,7 @@ export const test = base.extend<AutoFixtures>({
         // business and not a bug here.
         const source = msg.location().url;
         if (source && isTimingRequest(new URL(source))) return;
+        if (source && failingHosts.includes(new URL(source).hostname)) return;
         errors.push(`console: ${msg.text()}`);
       });
       page.on('pageerror', (err) => errors.push(`uncaught: ${err.message}`));
