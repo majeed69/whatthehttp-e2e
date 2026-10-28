@@ -3,7 +3,9 @@ import type { Route } from '@playwright/test';
 export const CLOUDFLARE = 'https://cloudflare-dns.com/dns-query?**';
 export const GOOGLE = 'https://dns.google/resolve?**';
 
-// Without this the browser hides the response from the page (CORS).
+// Cloudflare and Google send this so pages on other origins can read the
+// reply. route.fulfill() would add it anyway, but the mock should look like
+// the real thing.
 export const CORS = { 'access-control-allow-origin': '*' };
 
 // Documentation-only addresses (RFC 5737 and RFC 3849), so a failure message
