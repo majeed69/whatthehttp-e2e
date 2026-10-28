@@ -1,15 +1,5 @@
 import { test, expect } from './fixtures';
-
-const STATIONS = [
-  'You hit Enter',
-  'Checking the memory',
-  'DNS lookup',
-  'Knock knock (TCP)',
-  'Secret handshake (TLS)',
-  'The ask (HTTP)',
-  'The page appears',
-  'You have arrived',
-];
+import { STATIONS } from './helpers';
 
 // Console errors and CSP violations are checked for every test by the
 // failOnPageErrors fixture, so this test only has to load the page.
