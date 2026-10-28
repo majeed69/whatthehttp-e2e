@@ -108,6 +108,42 @@ test.describe('mobile', () => {
   });
 });
 
+const sidewaysOverflow = (page: Page) =>
+  page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+
+// A real site with a 58 character label. Browsers only wrap text at spaces
+// and hyphens, so a long unbroken name is the worst case for a narrow screen.
+const LONG_HOST = 'llanfairpwllgwyngyllgogerychwyrndrobwllllantysiliogogogoch.co.uk';
+
+// Engineer mode is checked because it adds wide tables and code blocks.
+// Two of these are known site bugs, found while writing this suite. test.fail
+// keeps the suite green and flags each one as soon as the site is fixed.
+const narrowScreens = [
+  { width: 375, site: 'example.com' },
+  // Below 334px the header doesn't fit and the theme button sticks out 14px
+  // at 320px. With the header hidden, nothing else overflows at 320px.
+  { width: 320, site: 'example.com', knownBug: 'header is wider than a 320px screen' },
+  // The panel text has the name in plain prose, which has no overflow-wrap.
+  { width: 375, site: LONG_HOST, knownBug: 'long site names in the panel text never wrap' },
+];
+
+for (const { width, site, knownBug } of narrowScreens) {
+  test(`nothing overflows sideways at ${width}px with ${site}`, async ({ page }) => {
+    test.fail(Boolean(knownBug), knownBug);
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('./');
+    await expect.poll(() => sidewaysOverflow(page), 'start page').toBe(0);
+
+    await startTrip(page, site);
+    await page.getByRole('button', { name: 'Engineer' }).click();
+    for (let n = 1; n <= STATIONS.length; n++) {
+      if (n > 1) await page.keyboard.press('ArrowRight');
+      await expectStation(page, n);
+      await expect.poll(() => sidewaysOverflow(page), `station ${n}`).toBe(0);
+    }
+  });
+}
+
 // Two things react to a resize: a ResizeObserver on the map redraws the
 // track, and a listener for the mobile breakpoint moves the details panel.
 // A resize that stays on desktop only triggers the observer, so both kinds
