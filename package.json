@@ -1,0 +1,12 @@
+{
+  "name": "whatthehttp-e2e",
+  "private": true,
+  "description": "End-to-end tests for WhatTheHTTP",
+  "scripts": {
+    "test": "playwright test",
+    "test:live": "BASE_URL=https://majeed69.github.io/whatthehttp/ playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}
