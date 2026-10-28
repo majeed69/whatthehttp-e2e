@@ -1,0 +1,32 @@
+name: live smoke
+
+on:
+  schedule:
+    # Once a day. Minute 17 because runs set for the top of the hour queue up
+    # and often start late.
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Actions are pinned to a commit, because a tag like v7 can be moved.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      # BASE_URL makes the config skip the local server and run only @smoke tests.
+      - run: npx playwright test
+        env:
+          BASE_URL: https://majeed69.github.io/whatthehttp/
