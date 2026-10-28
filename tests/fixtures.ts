@@ -39,7 +39,13 @@ export const test = base.extend<AutoFixtures>({
     async ({ page }, use) => {
       const errors: string[] = [];
       page.on('console', (msg) => {
-        if (msg.type() === 'error') errors.push(`console: ${msg.text()}`);
+        if (msg.type() !== 'error') return;
+        // The app times requests to the visited site's /favicon.ico. If that
+        // site has no favicon Chrome logs a 404, which is the other site's
+        // business and not a bug here.
+        const source = msg.location().url;
+        if (source && isTimingRequest(new URL(source))) return;
+        errors.push(`console: ${msg.text()}`);
       });
       page.on('pageerror', (err) => errors.push(`uncaught: ${err.message}`));
 
